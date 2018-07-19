@@ -8,7 +8,7 @@ load('exact_track_dist_full_v3.mat')
 % load('exact_track_dist_full_strictExclusions_v2.mat') %replaced with
 % above, 9.27.17
 
-fall_off_succ_TH = .5;
+fall_off_succ_TH = .8; %subjects should have made it through next turn at least
 sample_size_th = 10;
 z_scr_TH = 50;
 
@@ -37,10 +37,10 @@ end
 
 %% compute Pr(visit location | succ)
 day_inds = {...
-    [51:150], ...
-    [51:150, 251:350, 451:550, 651:750, 851:950], ...
-    [51:150, 251:350, 451:550, 651:750, 851:950], ...
-    [51:150, 251:350, 451:550, 651:750, 851:950, 1051:1150, 1251:1350, 1451:1550, 1651:1750, 1851:1950]};
+    1:200, ...
+    1:1000, ...
+    1:1000, ...
+    1:2000};
 % day_inds = {[51:150], [251:350], [451:550], [651:750], [851:950],...
 %     1000+[51:150], 1000+[251:350], 1000+[451:550], 1000+[651:750], 1000+[851:950]};
 
@@ -59,20 +59,32 @@ num_locs = 10;
 
 
 % for i_day = 1:grp_days(i_grp)
-succ_day = permute(traj_succ{i_grp}(:,day_inds{i_grp},:), [2, 1, 3]);
-loc_day = permute(traj_loc{i_grp}(:,day_inds{i_grp},:), [2, 1, 3]);
-tilt_day = permute(tilt_dir{i_grp}(:,day_inds{i_grp},:), [2 1 3]);
-dir_day = permute(traj_dir{i_grp}(:,day_inds{i_grp},:), [2 1 3]);
+sub_inds = 1:size(traj_succ{i_grp},3);
+% moved * from here
 
 n = nan(num_l_bins,num_d_bins,num_locs);
 u = nan(num_l_bins,num_d_bins,num_locs);
 u_s = nan(num_l_bins,num_d_bins,num_locs);
 
-for i_sub = 1:size(succ_day,3)
+%%
+for i_sub = 1:n_subs
+    % * moved to heare
+    succ_day_ = permute(traj_succ{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
+    succ_day = reshape(succ_day_, size(succ_day_, 1)*size(succ_day_,2), size(succ_day_,3));
+
+    loc_day_ = permute(traj_loc{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
+    loc_day = reshape(loc_day_, size(loc_day_, 1)*size(loc_day_,2), size(succ_day_,3));
+
+    tilt_day_ = permute(tilt_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
+    tilt_day = reshape(tilt_day_, size(tilt_day_, 1)*size(tilt_day_,2), size(succ_day_,3));
+
+    dir_day_ = permute(traj_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
+    dir_day = reshape(dir_day_, size(dir_day_, 1)*size(dir_day_,2), size(succ_day_,3));
+    
     try
-        temp_loc = loc_day(succ_day(:,1,i_sub)>0,:,i_sub);
-        temp_tilt = tilt_day(succ_day(:,1,i_sub)>0,:,i_sub);
-        temp_dir = dir_day(succ_day(:,1,i_sub)>0,:,i_sub);
+        temp_loc = loc_day(succ_day(:,1)>0,:);
+        temp_tilt = tilt_day(succ_day(:,1)>0,:);
+        temp_dir = dir_day(succ_day(:,1)>0,:);
         
         temp_n = nan(num_l_bins, num_d_bins, num_locs);
         for i_loc = 1:size(temp_loc,2)
@@ -270,7 +282,7 @@ for i_day = 1:grp_days(i_grp)
     end
 end
 
-% plot the compliance aligned to falloff location per day 
+%% plot the compliance aligned to falloff location per day 
 figure;
 for i_day = 1:grp_days(i_grp)
     subplot(2,5,i_day); hold on;
@@ -288,7 +300,7 @@ for i_day = 1:grp_days(i_grp)
     end
     errorfield(1:num_l_bins, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
     errorfield(1:num_l_bins, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
-    axis([0 10 0 5])
+%     axis([0 10 0 1.5])
 end
 %%
 pre_score = nan(n_subs, grp_days(i_grp));
