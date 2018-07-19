@@ -12,7 +12,7 @@ load('group_track_num.mat') % 1 = _1, 0 = _mirror
 
 %% 
 
-n_samp = 10;%20
+n_samp = 20;%10
 
 track_out = plotPath_fine(Tracks.fast_challenge_1.Paths); close;
 dist_1 = (sqrt(diff(track_out(1, :)).^2 + diff(track_out(2, :)).^2));

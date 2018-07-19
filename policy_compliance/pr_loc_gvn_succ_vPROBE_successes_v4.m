@@ -1,9 +1,9 @@
 
 
-load('tilt_dir.mat')
-load('tilt_mag.mat')
-load('traj_dir.mat')
-load('traj_loc.mat')
+load('tilt_dir_4.mat')
+load('tilt_mag_4.mat')
+load('traj_dir_4.mat')
+load('traj_loc_4.mat')
 load('exact_track_dist_full_v3.mat')
 % load('exact_track_dist_full_strictExclusions_v2.mat') %replaced above
 % 9/27/17
@@ -288,7 +288,7 @@ for i_day = 1:grp_days(i_grp)
     end
     errorfield(1:num_l_bins, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
     errorfield(1:num_l_bins, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
-    axis([0 10 0 5])
+    axis([0 10 0 2])
 end
 %%
 pre_score = nan(n_subs, grp_days(i_grp));

@@ -15,7 +15,7 @@ z_scr_TH = 50;
 if ~exist('i_grp', 'var')
     i_grp = 2;
 end
-grp_remove_sub = {[], [], [], [11 12 19]};
+grp_remove_sub = {[], [6], [2,3], [11 12 19]};
 % REMOVE_SUB = [2 4 11 19 20];
 REMOVE_SUB = grp_remove_sub{i_grp};
 % REMOVE_SUB = [];
@@ -54,7 +54,7 @@ num_l_bins = 10;
 L_BINS = linspace(0,1,num_l_bins+1);
 num_d_bins = 20; %number of direction bins
 D_BINS = linspace(-180, 180, num_d_bins + 1);
-num_locs = 10;
+num_locs = 20;
 % NOTE: TRACK LENGTHS USED ARE .25 TO .45
 
 
@@ -68,7 +68,7 @@ u_s = nan(num_l_bins,num_d_bins,num_locs);
 
 %%
 for i_sub = 1:n_subs
-    % * moved to heare
+    % * moved to here
     succ_day_ = permute(traj_succ{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
     succ_day = reshape(succ_day_, size(succ_day_, 1)*size(succ_day_,2), size(succ_day_,3));
 
@@ -265,19 +265,19 @@ end
 %% align policy compliance signal to falloff location ("rev" = reverse)
 zu_rev = nan(size(zu_trial));
 zu_rev_probe = nan(size(zu_trial_probe));
-loc_inds = 1:num_l_bins;
+loc_inds = 1:num_locs;
 for i_day = 1:grp_days(i_grp)
-    for i_sub = 1:size(zu_trial,3)
+    for i_sub = setdiff(1:size(zu_trial,3), REMOVE_SUB)
         for i_tr = 1:size(zu_trial,1)
             temp = zu_trial(i_tr, :, i_sub, i_day);
             k_max = max(loc_inds(~isnan(temp)));
             temp2 = temp(1:k_max);
-            zu_rev(i_tr, (num_l_bins - k_max + 1):num_l_bins, i_sub, i_day) = temp2;
+            zu_rev(i_tr, (num_locs - k_max + 1):num_locs, i_sub, i_day) = temp2;
             
             temp = zu_trial_probe(i_tr, :, i_sub, i_day);
             k_max = max(loc_inds(~isnan(temp)));
             temp2 = temp(1:k_max);
-            zu_rev_probe(i_tr, (num_l_bins - k_max + 1):num_l_bins, i_sub, i_day) = temp2;
+            zu_rev_probe(i_tr, (num_locs - k_max + 1):num_locs, i_sub, i_day) = temp2;
         end
     end
 end
@@ -286,8 +286,8 @@ end
 figure;
 for i_day = 1:grp_days(i_grp)
     subplot(2,5,i_day); hold on;
-    dev_pre = nan(n_subs, num_l_bins);
-    dev_prb = nan(n_subs, num_l_bins);
+    dev_pre = nan(n_subs, num_locs);
+    dev_prb = nan(n_subs, num_locs);
     for i_sub = setdiff(1:20, REMOVE_SUB)
         temp = zu_rev(:,:,i_sub, i_day);
         temp_pre = temp(sum(isnan(temp),2) < size(temp,2), :);
@@ -298,9 +298,9 @@ for i_day = 1:grp_days(i_grp)
         dev_pre(i_sub, :) = nanmean(temp_pre,1);
         dev_prb(i_sub, :) = nanmean(temp_prb,1);
     end
-    errorfield(1:num_l_bins, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
-    errorfield(1:num_l_bins, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
-%     axis([0 10 0 1.5])
+    errorfield(1:num_locs, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
+    errorfield(1:num_locs, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
+    axis([0 20 0 1.5])
 end
 %%
 pre_score = nan(n_subs, grp_days(i_grp));
@@ -412,28 +412,28 @@ temp_day = nan(size(temp_dev));
 i_ind = 1;
 for i_sub = 1:n_subs
     for i_day = 3:grp_days(i_grp)
-        temp_res = reshape(zu_rev(:, :, i_sub, i_day), 50, 10);
+        temp_res = reshape(zu_rev(:, :, i_sub, i_day), 50, num_locs);
         temp_res = temp_res(sum(isnan(temp_res),2) < size(temp_res,2), :);
         temp_res = reshape(temp_res', numel(temp_res), 1);
         temp_dev(i_ind - 1 + (1:length(temp_res))) = temp_res;
         
         temp_sub(i_ind - 1 + (1:length(temp_res))) = i_sub;
         
-        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, 10)', numel(temp_res)/10, 1);
+        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, num_locs)', numel(temp_res)/num_locs, 1);
         
         temp_prb(i_ind - 1 + (1:length(temp_res))) = 0;
         
         temp_day(i_ind - 1 + (1:length(temp_res))) = i_day;
         i_ind = i_ind + length(temp_res);
         
-        temp_res = reshape(zu_rev_probe(:, :, i_sub, i_day), 50, 10);
+        temp_res = reshape(zu_rev_probe(:, :, i_sub, i_day), 50, num_locs);
         temp_res = temp_res(sum(isnan(temp_res),2) < size(temp_res,2), :);
         temp_res = reshape(temp_res', numel(temp_res), 1);
         temp_dev(i_ind - 1 + (1:length(temp_res))) = temp_res;
         
         temp_sub(i_ind - 1 + (1:length(temp_res))) = i_sub;
         
-        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, 10)', numel(temp_res)/10, 1);
+        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, num_locs)', numel(temp_res)/num_locs, 1);
         
         if i_day == day_probe(i_grp)
             temp_prb(i_ind - 1 + (1:length(temp_res))) = 1;
