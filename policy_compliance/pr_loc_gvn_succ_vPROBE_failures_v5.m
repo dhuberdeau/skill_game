@@ -5,6 +5,7 @@ load('tilt_mag.mat')
 load('traj_dir.mat')
 load('traj_loc.mat')
 load('exact_track_dist_full_v3.mat')
+load('policy_all.mat');
 % load('exact_track_dist_full_strictExclusions_v2.mat') %replaced above
 % 9/27/17
 %%
@@ -49,7 +50,8 @@ grp_days = [1 5 5 10];
 n_subs = 20;
 
 p_loc_g_succ = cell(1,n_subs);
-u_loc = cell(2,n_subs);
+% u_loc = cell(2,n_subs);
+u_loc = p{i_grp};
 
 num_l_bins = 10;
 L_BINS = linspace(0,1,num_l_bins+1);
@@ -63,54 +65,54 @@ sub_inds = 1:size(traj_succ{i_grp},3);
 % moved * from here
 
 % n = nan(num_l_bins,num_d_bins,num_locs);
-u = nan(num_l_bins,num_d_bins,num_locs);
-u_s = nan(num_l_bins,num_d_bins,num_locs);
-
-for i_sub = 1:n_subs
-    % * moved to here
-    succ_day_ = permute(traj_succ{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
-    succ_day = reshape(succ_day_, size(succ_day_, 1)*size(succ_day_,2), size(succ_day_,3));
-
-    loc_day_ = permute(traj_loc{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
-    loc_day = reshape(loc_day_, size(loc_day_, 1)*size(loc_day_,2), size(succ_day_,3));
-
-    tilt_day_ = permute(tilt_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
-    tilt_day = reshape(tilt_day_, size(tilt_day_, 1)*size(tilt_day_,2), size(succ_day_,3));
-
-    dir_day_ = permute(traj_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
-    dir_day = reshape(dir_day_, size(dir_day_, 1)*size(dir_day_,2), size(succ_day_,3));
-    try
-        temp_loc = loc_day(succ_day(:,1)>0,:);
-        temp_tilt = tilt_day(succ_day(:,1)>0,:);
-        temp_dir = dir_day(succ_day(:,1)>0,:);
-        
-        temp_n = nan(num_l_bins, num_d_bins, num_locs);
-        for i_loc = 1:size(temp_loc,2)
-            temp_n_ = hist3([temp_loc(:,i_loc), temp_dir(:, i_loc)], {L_BINS, D_BINS});
-            temp_n(:,:,i_loc) = temp_n_(1:num_l_bins,1:num_d_bins);
-        end
-        n(:, :, :, i_sub) = temp_n;
-        for i_loc = 1:num_locs
-            for i_bin = 1:(num_l_bins-1)
-                for i_dir = 1:(num_d_bins-1)
-                    crit1 = temp_loc(:,i_loc) > L_BINS(i_bin) & temp_loc(:,i_loc) <= L_BINS(i_bin + 1);
-                    crit2 = temp_dir(:,i_loc) > D_BINS(i_dir) & temp_dir(:,i_loc) <= D_BINS(i_dir + 1);
-                    if sum(crit1&crit2) >= sample_size_th
-                        u(i_bin, i_dir, i_loc) = mean(temp_tilt(crit1 & crit2, i_loc));
-                        u_s(i_bin, i_dir, i_loc) = var(temp_tilt(crit1 & crit2, i_loc));
-                    end
-                end
-            end
-        end
-    catch
-        er = lasterror;
-        warning('wtf')
-    end
-    u_loc{1, i_sub} = u;
-    u_loc{2, i_sub} = u_s;
-end
-
-disp(['Policy map complete']);
+% u = nan(num_l_bins,num_d_bins,num_locs);
+% u_s = nan(num_l_bins,num_d_bins,num_locs);
+% 
+% for i_sub = 1:n_subs
+%     % * moved to here
+%     succ_day_ = permute(traj_succ{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
+%     succ_day = reshape(succ_day_, size(succ_day_, 1)*size(succ_day_,2), size(succ_day_,3));
+% 
+%     loc_day_ = permute(traj_loc{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2, 3, 1]);
+%     loc_day = reshape(loc_day_, size(loc_day_, 1)*size(loc_day_,2), size(succ_day_,3));
+% 
+%     tilt_day_ = permute(tilt_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
+%     tilt_day = reshape(tilt_day_, size(tilt_day_, 1)*size(tilt_day_,2), size(succ_day_,3));
+% 
+%     dir_day_ = permute(traj_dir{i_grp}(:,day_inds{i_grp},setdiff(sub_inds, i_sub)), [2 3 1]);
+%     dir_day = reshape(dir_day_, size(dir_day_, 1)*size(dir_day_,2), size(succ_day_,3));
+%     try
+%         temp_loc = loc_day(succ_day(:,1)>0,:);
+%         temp_tilt = tilt_day(succ_day(:,1)>0,:);
+%         temp_dir = dir_day(succ_day(:,1)>0,:);
+%         
+%         temp_n = nan(num_l_bins, num_d_bins, num_locs);
+%         for i_loc = 1:size(temp_loc,2)
+%             temp_n_ = hist3([temp_loc(:,i_loc), temp_dir(:, i_loc)], {L_BINS, D_BINS});
+%             temp_n(:,:,i_loc) = temp_n_(1:num_l_bins,1:num_d_bins);
+%         end
+%         n(:, :, :, i_sub) = temp_n;
+%         for i_loc = 1:num_locs
+%             for i_bin = 1:(num_l_bins-1)
+%                 for i_dir = 1:(num_d_bins-1)
+%                     crit1 = temp_loc(:,i_loc) > L_BINS(i_bin) & temp_loc(:,i_loc) <= L_BINS(i_bin + 1);
+%                     crit2 = temp_dir(:,i_loc) > D_BINS(i_dir) & temp_dir(:,i_loc) <= D_BINS(i_dir + 1);
+%                     if sum(crit1&crit2) >= sample_size_th
+%                         u(i_bin, i_dir, i_loc) = mean(temp_tilt(crit1 & crit2, i_loc));
+%                         u_s(i_bin, i_dir, i_loc) = var(temp_tilt(crit1 & crit2, i_loc));
+%                     end
+%                 end
+%             end
+%         end
+%     catch
+%         er = lasterror;
+%         warning('wtf')
+%     end
+%     u_loc{1, i_sub} = u;
+%     u_loc{2, i_sub} = u_s;
+% end
+% 
+% disp(['Policy map complete']);
 % end
 
 %%
@@ -298,7 +300,7 @@ for i_day = 1:grp_days(i_grp)
     end
     errorfield(1:num_locs, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
     errorfield(1:num_locs, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
-    axis([0 10 0 5])
+    axis([0 20 0 2])
 end
 %%
 pre_score = nan(n_subs, grp_days(i_grp));
