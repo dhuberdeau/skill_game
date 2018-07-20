@@ -6,6 +6,9 @@ load('traj_dir.mat')
 load('traj_loc.mat')
 load('exact_track_dist_full_v3.mat')
 load('policy_all.mat')
+load('deviation_maps_LEARN_FAILURES.mat')
+% load('deviation_maps_LEARN_SUCCESSES.mat')
+
 % load('exact_track_dist_full_strictExclusions_v2.mat') % replaced with
 % above, 9/27/17
 
@@ -57,79 +60,12 @@ L_BINS = linspace(0,1,num_l_bins+1);
 num_d_bins = 20; %number of direction bins
 D_BINS = linspace(-180, 180, num_d_bins + 1);
 num_locs = 20;
-% NOTE: TRACK LENGTHS USED ARE .25 TO .45
+% NOTE: TRACK LENGTHS USED ARE .25 TO .45 for *v4
+%       and .25 to .6 for *v5
+len_range = [.25, .6];
 
 % for i_day = 1:grp_days(i_grp)
 sub_inds = 1:size(traj_succ{i_grp},3);
-% moved * from here
-
-% n = nan(num_l_bins,num_d_bins,num_locs);
-% u = nan(num_l_bins,num_d_bins,num_locs);
-% u_s = nan(num_l_bins,num_d_bins,num_locs);
-% 
-% for i_sub = 1:n_subs
-%     succ_day = nan(100000, 20);
-%     loc_day = nan(100000, 20);
-%     tilt_day = nan(100000, 20);
-%     dir_day = nan(100000, 20);
-%     k = 1;
-%     for temp_grp = 1:length(day_inds)
-%         % * moved to here
-%         if i_grp == temp_grp
-%             this_sub = i_sub;
-%         else
-%             this_sub = [];
-%         end
-%         succ_day_ = permute(traj_succ{temp_grp}(:,day_inds{temp_grp},setdiff(sub_inds, this_sub)), [2, 3, 1]);
-%         succ_day_t = reshape(succ_day_, size(succ_day_, 1)*size(succ_day_,2), size(succ_day_,3));
-%         succ_day(k:(k + size(succ_day_t,1) - 1), :) = succ_day_t;
-% 
-%         loc_day_ = permute(traj_loc{temp_grp}(:,day_inds{temp_grp},setdiff(sub_inds, this_sub)), [2, 3, 1]);
-%         loc_day_t = reshape(loc_day_, size(loc_day_, 1)*size(loc_day_,2), size(succ_day_,3));
-%         loc_day(k:(k + size(loc_day_t,1) - 1), :) = loc_day_t;
-% 
-%         tilt_day_ = permute(tilt_dir{temp_grp}(:,day_inds{temp_grp},setdiff(sub_inds, this_sub)), [2 3 1]);
-%         tilt_day_t = reshape(tilt_day_, size(tilt_day_, 1)*size(tilt_day_,2), size(succ_day_,3));
-%         tilt_day(k:(k + size(tilt_day_t,1) - 1), :) = tilt_day_t;
-% 
-%         dir_day_ = permute(traj_dir{temp_grp}(:,day_inds{temp_grp},setdiff(sub_inds, this_sub)), [2 3 1]);
-%         dir_day_t = reshape(dir_day_, size(dir_day_, 1)*size(dir_day_,2), size(succ_day_,3));
-%         dir_day(k:(k + size(dir_day_t,1) - 1), :) = dir_day_t;
-%         k = k + size(succ_day_t,1);
-%     end
-%     try
-%         temp_loc = loc_day(succ_day(:,1)>0,:);
-%         temp_tilt = tilt_day(succ_day(:,1)>0,:);
-%         temp_dir = dir_day(succ_day(:,1)>0,:);
-%         
-%         temp_n = nan(num_l_bins, num_d_bins, num_locs);
-%         for i_loc = 1:size(temp_loc,2)
-%             temp_n_ = hist3([temp_loc(:,i_loc), temp_dir(:, i_loc)], {L_BINS, D_BINS});
-%             temp_n(:,:,i_loc) = temp_n_(1:num_l_bins,1:num_d_bins);
-%         end
-%         n(:, :, :, i_sub) = temp_n;
-%         for i_loc = 1:num_locs
-%             for i_bin = 1:(num_l_bins-1)
-%                 for i_dir = 1:(num_d_bins-1)
-%                     crit1 = temp_loc(:,i_loc) > L_BINS(i_bin) & temp_loc(:,i_loc) <= L_BINS(i_bin + 1);
-%                     crit2 = temp_dir(:,i_loc) > D_BINS(i_dir) & temp_dir(:,i_loc) <= D_BINS(i_dir + 1);
-%                     if sum(crit1&crit2) >= sample_size_th
-%                         u(i_bin, i_dir, i_loc) = mean(temp_tilt(crit1 & crit2, i_loc));
-%                         u_s(i_bin, i_dir, i_loc) = var(temp_tilt(crit1 & crit2, i_loc));
-%                     end
-%                 end
-%             end
-%         end
-%     catch
-%         er = lasterror;
-%         warning('wtf')
-%     end
-%     u_loc{1, i_sub} = u;
-%     u_loc{2, i_sub} = u_s;
-% end
-% 
-% disp(['Policy map complete']);
-% end
 
 %%
 u_temp = nan([size(u_loc{1,1}), n_subs]);
@@ -148,135 +84,11 @@ for i_bin = 1:size(u_temp,1)
 end
 
 %% compute Pr(visit location | succ) for pre- probe window
-% pre_wind = {1:50, 201:250, 401:450, 601:650, 801:850, 1001:1050, 1201:1250, 1401:1450, 1601:1650, 1801:1850};
 pre_wind = {1:50, 201:250, 401:450, 601:650, 801:850, 1001:1050, 1201:1250, 1401:1450, 1601:1650, 1801:1850};
+probe_wind = {76:125, 276:325, 476:525, 676:725, 876:925, 1076:1125, 1276:1325, 1476:1525, 1676:1725, 1876:1925};
 
-zu_trial = nan(length(pre_wind{1}), num_locs, n_subs, 10); %10 days
-
-for i_day = 1:grp_days(i_grp)
-    succ_day = permute(traj_succ{i_grp}(:,pre_wind{i_day},:), [2, 1, 3]);
-    loc_day = permute(traj_loc{i_grp}(:,pre_wind{i_day},:), [2, 1, 3]);
-    tilt_day = permute(tilt_dir{i_grp}(:,pre_wind{i_day},:), [2 1 3]);
-    dir_day = permute(traj_dir{i_grp}(:,pre_wind{i_day},:), [2 1 3]);
-    
-    zu_day = nan(size(tilt_day));
-%     zus_day = nan(num_l_bins, num_d_bins, num_locs, n_subs);
-    for i_sub = 1:size(succ_day,3)
-        trial_inds = 1:size(succ_day,1);
-        target_trials = trial_inds(succ_day(:,1,i_sub)<1);
-        
-        zu_sub = nan(size(succ_day,1), size(succ_day,2));
-        for i_tr = target_trials
-            try
-                temp_loc_tr = loc_day(i_tr,:,i_sub);
-                temp_tilt_tr = tilt_day(i_tr,:,i_sub);
-                temp_dir_tr = dir_day(i_tr,:,i_sub);
-                
-                for i_loc = 1:num_locs
-                    for i_bin = 1:num_l_bins
-                        for i_dir = 1:num_d_bins
-                            crit1 = temp_loc_tr(i_loc) > L_BINS(i_bin) & temp_loc_tr(i_loc) <= L_BINS(i_bin + 1);
-                            crit2 = temp_dir_tr(i_loc) > D_BINS(i_dir) & temp_dir_tr(i_loc) <= D_BINS(i_dir + 1);
-    %                         temp_tilt_tr = temp_tilt(crit1 & crit2, i_loc);
-    %                         zu_temp = nan(size(temp_tilt_tr,1), 1);
-                            if crit1 && crit2
-                                mu = u_loc{1,i_sub}(i_bin, i_dir, i_loc);
-%                                 s_temp = reshape(u_conglom{2,i_sub}(i_bin, i_dir, i_loc, :), 10, 1); %10 for day
-                                sig = sqrt(u_loc{2,i_sub}(i_bin, i_dir, i_loc));
-                                if ~isnan(mu) && ~isnan(sig)
-                                    if temp_tilt_tr(i_loc) > -180 && temp_tilt_tr(i_loc) < 180
-                                        zscore_temp = abs((temp_tilt_tr(i_loc) - mu)./sig);
-                                        if zscore_temp < z_scr_TH
-    %                                     zscore_temp = ((temp_tilt_tr(i_loc) - mu));
-    %                                     if zscore_temp < 180 & zscore_temp > -180
-                                            zu_sub(i_tr, i_loc) = zscore_temp;
-                                        else
-                                            zu_sub(i_tr, i_loc) = nan;
-                                        end
-                                    else
-                                        zu_sub(i_tr, i_loc) = nan;
-                                    end
-                                else
-                                    a=1+1;
-                                end
-                            end
-                        end
-                    end
-                end
-            catch er
-                warning('wtf');
-            end
-        end
-    zu_day(:, :, i_sub) = zu_sub;    
-    end
-    zu_trial(:,:,:, i_day) = zu_day;
-%     z_u{1, i_day} = zu_day;
-%     z_u{2, i_day} = zus_day;
-    disp(['Day: ', num2str(i_day)]);
-end
-%% compute Pr(visit location | succ) for probe window
-probe_wind = {151:200, 351:400, 551:600, 751:800, 951:1000, 1151:1200, 1351:1400, 1551:1600, 1751:1800, 1951:2000};
-% probe_wind = {76:125, 276:325, 476:525, 676:725, 876:925, 1076:1125, 1276:1325, 1476:1525, 1676:1725, 1876:1925};
-
-zu_trial_probe = nan(length(pre_wind{1}), num_locs, n_subs, grp_days(i_grp)); %10 days
-
-for i_day = 1:grp_days(i_grp)
-    succ_day = permute(traj_succ{i_grp}(:,probe_wind{i_day},:), [2, 1, 3]);
-    loc_day = permute(traj_loc{i_grp}(:,probe_wind{i_day},:), [2, 1, 3]);
-    tilt_day = permute(tilt_dir{i_grp}(:,probe_wind{i_day},:), [2 1 3]);
-    dir_day = permute(traj_dir{i_grp}(:,probe_wind{i_day},:), [2 1 3]);
-    
-    zu_day = nan(size(tilt_day));
-%     zus_day = nan(num_l_bins, num_d_bins, num_locs, n_subs);
-    for i_sub = 1:size(succ_day,3)
-        trial_inds = 1:size(succ_day,1);
-        target_trials = trial_inds(succ_day(:,1,i_sub)<1);
-        
-        zu_sub = nan(size(succ_day,1), size(succ_day,2));
-        for i_tr = target_trials
-            try
-                temp_loc_tr = loc_day(i_tr,:,i_sub);
-                temp_tilt_tr = tilt_day(i_tr,:,i_sub);
-                temp_dir_tr = dir_day(i_tr,:,i_sub);
-                
-                for i_loc = 1:num_locs
-                    for i_bin = 1:num_l_bins
-                        for i_dir = 1:num_d_bins
-                            crit1 = temp_loc_tr(:,i_loc) > L_BINS(i_bin) & temp_loc_tr(:,i_loc) <= L_BINS(i_bin + 1);
-                            crit2 = temp_dir_tr(:,i_loc) > D_BINS(i_dir) & temp_dir_tr(:,i_loc) <= D_BINS(i_dir + 1);
-                            if crit1 && crit2
-                                mu = u_loc{1,i_sub}(i_bin, i_dir, i_loc, :);
-%                                 s_temp = reshape(u_conglom{2,i_sub}(i_bin, i_dir, i_loc, :), 10, 1);
-                                sig = sqrt(u_loc{2,i_sub}(i_bin, i_dir, i_loc, :));
-                                if ~isnan(mu) && ~isnan(sig)
-                                    if temp_tilt_tr(i_loc) > -180 && temp_tilt_tr(i_loc) < 180
-                                        zscore_temp = abs((temp_tilt_tr(i_loc) - mu)./sig);
-                                        if zscore_temp < z_scr_TH
-    %                                     zscore_temp = ((temp_tilt_tr(i_loc) - mu));
-    %                                     if zscore_temp < 180 & zscore_temp > -180
-                                            zu_sub(i_tr, i_loc) = zscore_temp;
-                                        else
-                                            zu_sub(i_tr, i_loc) = nan;
-                                        end
-                                    else
-                                        zu_sub(i_tr, i_loc) = nan;
-                                    end
-                                else
-                                   a = 1+1; 
-                                end
-                            end
-                        end
-                    end
-                end
-            catch
-                warning('wtf');
-            end
-        end
-    zu_day(:, :, i_sub) = zu_sub;    
-    end
-    zu_trial_probe(:,:,:, i_day) = zu_day;
-    disp(['Day: ', num2str(i_day)]);
-end
+zu_trial = zu_trial_init_failures{i_grp};
+zu_trial_probe = zu_trial_asym_failures{i_grp};
 
 %% 
 zu_rev = nan(size(zu_trial));
@@ -298,6 +110,7 @@ for i_day = 1:grp_days(i_grp)
     end
 end
 
+%%
 figure;
 for i_day = 1:grp_days(i_grp)
     subplot(2,5,i_day); hold on;
@@ -315,7 +128,7 @@ for i_day = 1:grp_days(i_grp)
     end
     errorfield(1:num_locs, nanmean(dev_pre,1), nanstd(dev_pre)./sqrt(sum(~isnan(dev_pre(:,end)))), 'k');
     errorfield(1:num_locs, nanmean(dev_prb,1), nanstd(dev_prb)./sqrt(sum(~isnan(dev_prb(:,end)))), 'r');
-    axis([0 20 0 5])
+    axis([0 20 0 2])
 end
 %%
 pre_score = nan(n_subs, grp_days(i_grp));
@@ -420,7 +233,7 @@ errorbar([1 2], nanmean([resid_pre, resid_prb]), nanstd([resid_pre, resid_prb]).
 
 %%
 T_dev_fail = table; 
-temp_dev = nan(50*num_locs*n_subs*(grp_days(i_grp) - 2)*2, 1);
+temp_dev = nan(length(pre_wind{1})*num_locs*n_subs*(grp_days(i_grp) - 2)*2, 1);
 temp_sub = nan(size(temp_dev));
 temp_len = nan(size(temp_dev));
 temp_prb = nan(size(temp_dev));
@@ -428,28 +241,28 @@ temp_day = nan(size(temp_dev));
 i_ind = 1;
 for i_sub = 1:n_subs
     for i_day = 3:grp_days(i_grp)
-        temp_res = reshape(zu_rev(:, :, i_sub, i_day), 50, num_locs);
+        temp_res = reshape(zu_rev(:, :, i_sub, i_day), length(pre_wind{1}), num_locs);
         temp_res = temp_res(sum(isnan(temp_res),2) < size(temp_res,2), :);
         temp_res = reshape(temp_res', numel(temp_res), 1);
         temp_dev(i_ind - 1 + (1:length(temp_res))) = temp_res;
         
         temp_sub(i_ind - 1 + (1:length(temp_res))) = i_sub;
         
-        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, num_locs)', numel(temp_res)/num_locs, 1);
+        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(len_range(1), len_range(2), num_locs)', numel(temp_res)/num_locs, 1);
         
         temp_prb(i_ind - 1 + (1:length(temp_res))) = 0;
         
         temp_day(i_ind - 1 + (1:length(temp_res))) = i_day;
         i_ind = i_ind + length(temp_res);
         
-        temp_res = reshape(zu_rev_probe(:, :, i_sub, i_day), 50, num_locs);
+        temp_res = reshape(zu_rev_probe(:, :, i_sub, i_day), length(probe_wind{1}), num_locs);
         temp_res = temp_res(sum(isnan(temp_res),2) < size(temp_res,2), :);
         temp_res = reshape(temp_res', numel(temp_res), 1);
         temp_dev(i_ind - 1 + (1:length(temp_res))) = temp_res;
         
         temp_sub(i_ind - 1 + (1:length(temp_res))) = i_sub;
         
-        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(.25, .45, num_locs)', numel(temp_res)/num_locs, 1);
+        temp_len(i_ind - 1 + (1:length(temp_res))) = repmat(linspace(len_range(1), len_range(2), num_locs)', numel(temp_res)/num_locs, 1);
         
         if i_day == day_probe(i_grp)
             temp_prb(i_ind - 1 + (1:length(temp_res))) = 1;
