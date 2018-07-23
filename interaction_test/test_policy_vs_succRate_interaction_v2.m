@@ -46,12 +46,13 @@ for i_grp = 2:4
     n_subs = n_subs + size(kine_meas{2,i_grp},2);
 end
 
-%% Match kinematics: what happens to distance travelled?
 succ_meas_diff = nan(n_subs, 1);
 kine_meas_diff = nan(n_subs, 1);
 k_sub = 1;
 for i_grp = 2:4
-    for i_sub = 1:size(kine_meas{i_grp},2)
+    % look for trials where kinematics are matched, and check if dist
+    % travelled is any different between probe and pre-probe
+    for i_sub = 1:size(kine_meas{2,i_grp},2)
         Y_temp = kine_meas{2, i_grp}(:, i_sub);
         Y = Y_temp(~isnan(Y_temp));
         succ_temp = succ_meas{2, i_grp}(:, i_sub);
@@ -60,7 +61,7 @@ for i_grp = 2:4
             X_temp = kine_meas{1, i_grp}(:, i_sub);
             X = X_temp(~isnan(X_temp));
             [indx, distx] = knnsearch(X, Y);
-            kine_meas_diff(k_sub) = nanmean(X(indx(distx > -0.05 & distx < 0.05))) - nanmean(Y(distx > -0.05 & distx < 0.05));
+%             kine_meas_diff(k_sub) = nanmean(X(indx(distx > -0.05 & distx < 0.05))) - nanmean(Y(distx > -0.05 & distx < 0.05));
 %             kine_meas_diff(k_sub) = nanmean(X(indx)) - nanmean(Y);
             
             succ_temp = succ_meas{1, i_grp}(:, i_sub);
@@ -68,6 +69,29 @@ for i_grp = 2:4
             succ_X_matched_samp = succ_X(indx(distx > -0.05 & distx < 0.05));
             
             succ_meas_diff(k_sub) = nanmean(succ_X_matched_samp) - nanmean(succ_Y(distx > -0.05 & distx < 0.05));
+        end
+        k_sub = 1 + k_sub;
+    end
+    % Look for trials where distance travelled is matched, and check if
+    % kinematics is any different between probe and pre-probe
+    for i_sub = 1:size(succ_meas{2,i_grp},2)
+        Y_temp = succ_meas{2, i_grp}(:, i_sub);
+        Y = Y_temp(~isnan(Y_temp));
+        kine_temp = kine_meas{2, i_grp}(:, i_sub);
+        kine_Y = kine_temp(~isnan(Y_temp));
+        if ~isempty(Y)
+            X_temp = succ_meas{1, i_grp}(:, i_sub);
+            X = X_temp(~isnan(X_temp));
+            [indx, distx] = knnsearch(X, Y);
+            
+%             kine_meas_diff(k_sub) = nanmean(X(indx)) - nanmean(Y);
+            
+            kine_temp = kine_meas{1, i_grp}(:, i_sub);
+            kine_X = kine_temp(~isnan(X_temp));
+            kine_X_matched_samp = kine_X(indx(distx > -0.05 & distx < 0.05));
+            
+            kine_meas_diff(k_sub) = nanmean(kine_X_matched_samp) - nanmean(kine_Y(distx > -0.05 & distx < 0.05));
+%             succ_meas_diff(k_sub) = nanmean(succ_X_matched_samp) - nanmean(succ_Y(distx > -0.05 & distx < 0.05));
         end
         k_sub = 1 + k_sub;
     end
@@ -79,43 +103,7 @@ end
 [h_kin,p_kin,ci_kin,stat_kin] = ttest(kine_meas_diff)
 [h_succ,p_succ,ci_succ,stat_succ] = ttest(succ_meas_diff)
 figure; ah = axes; hold on;
-errorbar([1,2], nanmean(-[kine_meas_diff succ_meas_diff]), sqrt(nanvar([kine_meas_diff succ_meas_diff])./size(kine_meas_diff,1)),'.')
-bar([1,2], nanmean(-[kine_meas_diff succ_meas_diff]),'k')
-title('Matched kinematics');
-
-%% Match distance travelled: what happens to kinematics
-succ_meas_diff_2 = nan(n_subs, 1);
-kine_meas_diff_2 = nan(n_subs, 1);
-k_sub = 1;
-for i_grp = 2:4
-    for i_sub = 1:size(succ_meas{i_grp},2)
-        Y_temp = succ_meas{2, i_grp}(:, i_sub);
-        Y = Y_temp(~isnan(Y_temp));
-        kine_temp = kine_meas{2, i_grp}(:, i_sub);
-        kine_Y = kine_temp(~isnan(Y_temp));
-        if ~isempty(Y)
-            X_temp = succ_meas{1, i_grp}(:, i_sub);
-            X = X_temp(~isnan(X_temp));
-            [indx, distx] = knnsearch(X, Y);
-            succ_meas_diff_2(k_sub) = nanmean(X(indx(distx > -0.05 & distx < 0.05))) - nanmean(Y(distx > -0.05 & distx < 0.05));
-%             kine_meas_diff(k_sub) = nanmean(X(indx)) - nanmean(Y);
-            
-            kine_temp = kine_meas{1, i_grp}(:, i_sub);
-            kine_X = kine_temp(~isnan(X_temp));
-            kine_X_matched_samp = kine_X(indx(distx > -0.05 & distx < 0.05));
-            
-            kine_meas_diff_2(k_sub) = nanmean(kine_X_matched_samp) - nanmean(kine_Y(distx > -0.05 & distx < 0.05));
-        end
-        k_sub = 1 + k_sub;
-    end
-end
-
-% disparate = kine_meas_diff > .2 | kine_meas_diff < -.2;
-% kine_meas_diff(disparate) = nan;
-% succ_meas_diff(disparate) = nan;
-[h_kin_2,p_kin_2,ci_kin_2,stat_kin_2] = ttest(kine_meas_diff_2)
-[h_succ_2,p_succ_2,ci_succ_2,stat_succ_2] = ttest(succ_meas_diff_2)
-figure; ah = axes; hold on;
-errorbar([1,2], nanmean(-[kine_meas_diff_2 succ_meas_diff_2]), sqrt(nanvar([kine_meas_diff_2 succ_meas_diff_2])./size(kine_meas_diff_2,1)),'.')
-bar([1,2], nanmean(-[kine_meas_diff_2 succ_meas_diff_2]),'k')
-title('Matched distance travelled');
+errorbar([1], nanmean(-[kine_meas_diff]), sqrt(nanvar([kine_meas_diff ])./size(kine_meas_diff,1)),'.')
+errorbar([2], nanmean(-[succ_meas_diff]), sqrt(nanvar([succ_meas_diff])./size(succ_meas_diff,1)),'.')
+bar([1], nanmean(-[kine_meas_diff]),'k')
+bar([2], nanmean(-[succ_meas_diff]),'k')

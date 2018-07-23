@@ -149,34 +149,38 @@ end
 %%
 % mean deviation analysis
 
-score_succ_all = [[score_succ_grp{2}(:, 1:4), nan(20, 2),score_succ_grp{2}(:, 7:10), nan(20, 10)];...
-    [score_succ_grp{3}(:, setdiff(1:10, 9:10)), nan(20, 12)];...
-    score_succ_grp{4}(:, setdiff(1:20, 19:20)), nan(20, 2)];
+score_succ_all = [[score_succ_grp{2}(:, 1:5), nan(20, 1),score_succ_grp{2}(:, 7:10), nan(20, 10)];...
+    [score_succ_grp{3}(:, setdiff(1:10, 10)), nan(20, 11)];...
+    score_succ_grp{4}(:, setdiff(1:20, 20)), nan(20, 1)];
 score_succ_prbDay = [score_succ_grp{2}(:, 5:6); score_succ_grp{3}(:, 9:10); score_succ_grp{4}(:, 19:20)];
 
 
-score_fail_all = [[score_fail_grp{2}(:, 1:4), nan(20, 2),score_fail_grp{2}(:, 7:10), nan(20, 10)];...
-    [score_fail_grp{3}(:, setdiff(1:10, 9:10)), nan(20, 12)];...
-    score_fail_grp{4}(:, setdiff(1:20, 19:20)), nan(20, 2)];
+score_fail_all = [[score_fail_grp{2}(:, 1:5), nan(20, 1),score_fail_grp{2}(:, 7:10), nan(20, 10)];...
+    [score_fail_grp{3}(:, setdiff(1:10, 10)), nan(20, 11)];...
+    score_fail_grp{4}(:, setdiff(1:20, 20)), nan(20, 1)];
 score_fail_prbDay = [score_fail_grp{2}(:, 5:6); score_fail_grp{3}(:, 9:10); score_fail_grp{4}(:, 19:20)];
 
 
 [h_score_s, p_score_s, b_score_s, c_score_s] = ttest(score_succ_prbDay(:, 1) - score_succ_prbDay(:, 2));
 [h_score_f, p_score_f, b_score_f, c_score_f] = ttest(score_fail_prbDay(:, 1) - score_fail_prbDay(:, 2));
 
+%%
 figure; hold on;
 plot([1 2], [score_succ_prbDay(:, 1), score_succ_prbDay(:, 2)], '-', 'Color', [.5 .5 .5]);
 errorbar([1 2], nanmean([score_succ_prbDay(:, 1), score_succ_prbDay(:, 2)]),...
     nanstd([score_succ_prbDay(:, 1), score_succ_prbDay(:, 2)])./sqrt(sum(~isnan([score_succ_prbDay(:, 1), score_succ_prbDay(:, 2)]))),...
     'b.-');
+axis([.8 2.2 .2 2])
 title('Successes');
 figure; hold on;
 plot([1 2], [score_fail_prbDay(:, 1), score_fail_prbDay(:, 2)], '-', 'Color', [.5 .5 .5]);
 errorbar([1 2], nanmean([score_fail_prbDay(:, 1), score_fail_prbDay(:, 2)]),...
     nanstd([score_fail_prbDay(:, 1), score_fail_prbDay(:, 2)])./sqrt(sum(~isnan([score_fail_prbDay(:, 1), score_fail_prbDay(:, 2)]))),...
     'r.-');
+axis([.8 2.2 .2 2])
 title('Failures');
 
+%%
 dt_pre_all = nan(60, 10);
 dt_prb_all = nan(60, 10);
 k_subj = 1;
@@ -256,3 +260,23 @@ for i_grp = 2:4
 end
 
 save score_by_trial_grp score_succ_by_trial_grp score_fail_by_trial_grp
+
+%%
+pre_wind_wind = [[.375 1.375, 2.375, 3.375 4.375], 5+[.375 1.375, 2.375, 3.375 4.375]];
+prb_wind_wind = [[.625 1.625, 2.625, 3.625 4.625], 5+[.625 1.625, 2.625, 3.625 4.625]];
+x = reshape([pre_wind_wind(1:grp_days(i_grp)); prb_wind_wind(1:grp_days(i_grp))], 2*grp_days(i_grp), 1);
+
+%learning curve with probes:
+figure; %subplot(2,1,1);
+errorbar(x, nanmean(score_succ_all,1), sqrt(nanvar(score_succ_all)./sum(~isnan(score_succ_all))), 'b.-')
+hold on
+errorbar(x(6), nanmean(score_succ_grp{2}(:, 6)), sqrt(nanvar(score_succ_grp{2}(:, 6))./sum(~isnan(score_succ_grp{2}(:, 6)))), 'rs')
+errorbar(x(10), nanmean(score_succ_grp{3}(:, 10)), sqrt(nanvar(score_succ_grp{3}(:, 10))./sum(~isnan(score_succ_grp{3}(:, 10)))), 'rs')
+errorbar(x(20), nanmean(score_succ_grp{4}(:, 20)), sqrt(nanvar(score_succ_grp{4}(:, 20))./sum(~isnan(score_succ_grp{4}(:, 20)))), 'rs')
+
+% subplot(2,1,2);
+errorbar(x, nanmean(score_fail_all,1), sqrt(nanvar(score_fail_all)./sum(~isnan(score_fail_all))), 'g.-')
+hold on
+errorbar(x(6), nanmean(score_fail_grp{2}(:, 6)), sqrt(nanvar(score_fail_grp{2}(:, 6))./sum(~isnan(score_fail_grp{2}(:, 6)))), 'rs')
+errorbar(x(10), nanmean(score_fail_grp{3}(:, 10)), sqrt(nanvar(score_fail_grp{3}(:, 10))./sum(~isnan(score_fail_grp{3}(:, 10)))), 'rs')
+errorbar(x(20), nanmean(score_fail_grp{4}(:, 20)), sqrt(nanvar(score_fail_grp{4}(:, 20))./sum(~isnan(score_fail_grp{4}(:, 20)))), 'rs')

@@ -40,11 +40,11 @@ figure;
 subplot(2,1,1);
 errorbar(x, nanmean(score_fail_all), sqrt(nanvar(score_fail_all)./sum(~isnan(score_fail_all))), 'k.-');
 title('Failures')
-axis([0 11 0.7 2.6])
+axis([0 11 0.25 1])
 subplot(2,1,2);
 errorbar(x, nanmean(score_succ_all), sqrt(nanvar(score_succ_all)./sum(~isnan(score_succ_all))), 'k.-');
 title('Successes')
-axis([0 11 0.7 2.6])
+axis([0 11 0.25 1])
 %% export for analysis in R of linear mixed effect model
 
 % within day analysis:

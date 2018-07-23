@@ -1,6 +1,7 @@
 load('traj_pcData.mat')
-load('exact_track_dist_full_strictExclusions_v2.mat')
-load('score_slopes_data')
+% load('exact_track_dist_full_strictExclusions_v2.mat')
+load('exact_track_dist_full_v3.mat') %distance travelled measure
+% load('score_slopes_data')
 load('score_by_trial_grp')
 %% collect trajectory data, distance travelled data, and policy deviation data 
 % from each day's "window A" (pre- on probe days), and "window B" (probe-
@@ -246,3 +247,5 @@ legend('Kinematics', 'Deviation', 'Dist Trv')
 [h_dev_dt, p_dev_dt] = kstest2(match_dev_all, match_dt_all);
 
 [h_anova, p_anova, stat_anova] = anova1([match_samp_all, match_dev_all, match_dt_all, ]);
+
+kruk_p = kruskalwallis([match_samp_all, match_dev_all, match_dt_all, ])

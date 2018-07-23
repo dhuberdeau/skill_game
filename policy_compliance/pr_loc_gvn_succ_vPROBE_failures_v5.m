@@ -18,7 +18,7 @@ z_scr_TH = 50;
 if ~exist('i_grp', 'var')
     i_grp = 2;
 end
-grp_remove_sub = {[], [6], [2,3], [11 12 19]};
+grp_remove_sub = {[], [6], [2,3], [12]};
 % REMOVE_SUB = [2 4 11 19 20];
 REMOVE_SUB = grp_remove_sub{i_grp};
 % REMOVE_SUB = [];
