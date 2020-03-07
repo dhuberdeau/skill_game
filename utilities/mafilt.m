@@ -1,4 +1,4 @@
-function [fmean, fvar] = mafilt(x, n)
+function [fmean, fvar] = mafilt(x, n, varargin)
 % function f = mafilt(x, n)
 % 
 % Filters the signal(s) in x by applying a moving average filter with
@@ -16,8 +16,40 @@ function [fmean, fvar] = mafilt(x, n)
 %
 % David Huberdeau
 % 01/28/14
+if nargin > 2
+    % indicator given as to whether to use mean or nanmean
+    ignore_nan = varargin{1};
+else
+    % no indicator given, use mean (vs. nanmean)
+    ignore_nan = 0;
+end
 
-if min(size(x)) < 2
+if ignore_nan
+    if min(size(x)) < 2
+        % x is vector
+        revisedInds = 1:(size(x,1)-mod(size(x,1), n));
+        x_mat = reshape(x(revisedInds), n, floor(length(x)/n));
+        fmean = nanmean(x_mat,1);
+        fvar = nanvar(x_mat,0,1);
+        dimX = size(x);
+        if dimX(2) < dimX(1)
+            fmean = fmean';
+            fvar = fvar';
+        end
+    else
+        % x is matrix, dimensions must be set.
+        dimX = size(x,2);
+        fmean = nan(floor(size(x,1)/n), dimX);
+        fvar = nan(floor(size(x,1)/n), dimX);
+        revisedInds = 1:(size(x,1)-mod(size(x,1), n));
+        for i_col = 1:dimX
+            tempx = reshape(x(revisedInds,i_col), n, floor(size(x,1)/n));
+            fmean(:,i_col) = nanmean(tempx,1)';
+            fvar(:,i_col) = nanvar(tempx,0,1)';
+        end
+    end
+else
+    if min(size(x)) < 2
     % x is vector
     revisedInds = 1:(size(x,1)-mod(size(x,1), n));
     x_mat = reshape(x(revisedInds), n, floor(length(x)/n));
@@ -38,6 +70,7 @@ else
         tempx = reshape(x(revisedInds,i_col), n, floor(size(x,1)/n));
         fmean(:,i_col) = mean(tempx,1)';
         fvar(:,i_col) = var(tempx,0,1)';
+    end
     end
 end
 
